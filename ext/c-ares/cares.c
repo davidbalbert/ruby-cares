@@ -646,7 +646,16 @@ rb_cares_select_loop(int argc, VALUE *argv, VALUE self)
 	return(Qnil);
 }
 
-/* TODO: figure out how to write documentation ;) */
+/*
+ *  call-seq:
+ *     cares.get_fds    => [read_ary, write_ary]
+ *
+ *  Returns the file descriptors that are used to perform the queries. Useful
+ *  for integrating <code>Cares</code> into an external eventloop.
+ *
+ *  Returns two arrays, <code>read_ary</code> and <code>write_ary</code>,
+ *  containing the file descriptors for the sockets used to make the queries.
+ */
 static VALUE
 rb_cares_get_fds(VALUE self)
 {
