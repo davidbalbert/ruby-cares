@@ -692,7 +692,9 @@ Init_cares(void)
 {
 	VALUE cCares = rb_define_class("Cares", rb_cObject);
 
-	ares_library_init(ARES_LIB_INIT_ALL);
+	int status = ares_library_init(ARES_LIB_INIT_ALL);
+	if (status != ARES_SUCCESS)
+		raise_error(status);
 
 	define_cares_exceptions(cCares);
 
