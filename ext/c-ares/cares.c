@@ -691,6 +691,9 @@ void
 Init_cares(void)
 {
 	VALUE cCares = rb_define_class("Cares", rb_cObject);
+
+	ares_library_init(ARES_LIB_INIT_ALL);
+
 	define_cares_exceptions(cCares);
 
 	cInit = rb_define_class_under(cCares, "Init", rb_cObject);
