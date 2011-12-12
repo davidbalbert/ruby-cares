@@ -691,6 +691,7 @@ void
 Init_cares(void)
 {
 	VALUE cCares = rb_define_class("Cares", rb_cObject);
+	rb_define_const(cCares, "ARES_SOCKET_BAD", INT2NUM(ARES_SOCKET_BAD));
 
 	int status = ares_library_init(ARES_LIB_INIT_ALL);
 	if (status != ARES_SUCCESS)
