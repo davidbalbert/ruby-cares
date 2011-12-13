@@ -81,6 +81,7 @@
 
 static VALUE cInit;
 static VALUE cNameInfo;
+static VALUE cCaresError;
 static VALUE cNotImpError;
 static VALUE cBadNameError;
 static VALUE cNotFoundError;
@@ -91,18 +92,20 @@ static VALUE cFlagsError;
 static void
 define_cares_exceptions(VALUE cCares)
 {
+	cCaresError = rb_define_class_under(cCares, "CaresError",
+	    rb_eStandardError);
 	cNotImpError = rb_define_class_under(cCares, "NotImplementedError",
-	    rb_eException);
+	    cCaresError);
 	cBadNameError = rb_define_class_under(cCares, "BadNameError",
-	    rb_eException);
+	    cCaresError);
 	cNotFoundError = rb_define_class_under(cCares, "AddressNotFoundError",
-	    rb_eException);
+	    cCaresError);
 	cNoMemError = rb_define_class_under(cCares, "NoMemoryError",
-	    rb_eException);
+	    cCaresError);
 	cDestrError = rb_define_class_under(cCares, "DestructionError",
-	    rb_eException);
+	    cCaresError);
 	cFlagsError = rb_define_class_under(cCares, "BadFlagsError",
-	    rb_eException);
+	    cCaresError);
 }
 
 static void
