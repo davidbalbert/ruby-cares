@@ -355,7 +355,8 @@ set_init_opts(VALUE opts, struct ares_options *aop)
  *  has its state changed. The block takes three arguments. The first one is
  *  the <code>Socket</code> object, the the other two are boolean values
  *  indicating if the socket should listen for read and/or write events,
- *  respectively.
+ *  respectively. If both boolean values are <code>false</code>, the socket has
+ *  been closed.
  */
 static VALUE
 rb_cares_init(int argc, VALUE *argv, VALUE self)
