@@ -687,6 +687,48 @@ rb_cares_get_fds(VALUE self)
 	return return_ary;
 }
 
+/*
+ *  call-seq:
+ *     cares.process_fd(read_sock, write_sock)    => nil
+ *
+ * Processes input and output for read_sock and write sock as well as timeout
+ * events for pending queries.  Either socket can be ignored by using
+ * Cares::ARES_SOCKET_BAD for "no action". If you use Care::ARES_SOCKET_BAD for
+ * both sockets, only timeout events will be processed.
+ *
+ * This is most useful in conjunction with the socket event callback block
+ * passed in to Cares.new to integrate Cares into your own event loop. Each
+ * time the socket callback occurs, add the socket to your event loop or I/O
+ * multiplexer (select(2), poll(2), epoll(2), kqueue(2), etc.) and call this
+ * method once the socket is ready for reading or writing.
+ */
+static VALUE
+rb_cares_process_fd(VALUE self, VALUE read_sock, VALUE write_sock)
+{
+	ares_channel *chp;
+	int read_fd, write_fd;
+
+	if (rb_respond_to(read_sock, rb_intern("fileno")))
+		read_fd = NUM2INT(rb_funcall(read_sock, rb_intern("fileno"), 0));
+	else if (FIXNUM_P(read_sock) && NUM2INT(read_sock) == ARES_SOCKET_BAD)
+		read_fd = NUM2INT(read_sock);
+	else
+		rb_raise(rb_eArgError, "read_sock must be a Socket or Cares::ARES_SOCKET_BAD");
+
+	if (rb_respond_to(write_sock, rb_intern("fileno")))
+		write_fd = NUM2INT(rb_funcall(write_sock, rb_intern("fileno"), 0));
+	else if (FIXNUM_P(write_sock) && NUM2INT(write_sock) == ARES_SOCKET_BAD)
+		write_fd = NUM2INT(write_sock);
+	else
+		rb_raise(rb_eArgError, "write_sock must be a Socket or Cares::ARES_SOCKET_BAD");
+
+	Data_Get_Struct(self, ares_channel, chp);
+
+	ares_process_fd(*chp, read_fd, write_fd);
+
+	return(Qnil);
+}
+
 void
 Init_cares(void)
 {
@@ -713,4 +755,5 @@ Init_cares(void)
 	rb_define_method(cCares, "select_loop", rb_cares_select_loop, -1);
 
 	rb_define_method(cCares, "get_fds", rb_cares_get_fds, 0);
+	rb_define_method(cCares, "process_fd", rb_cares_process_fd, 2);
 }
