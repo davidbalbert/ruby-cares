@@ -698,11 +698,12 @@ Init_cares(void)
 	VALUE cCares = rb_define_class("Cares", rb_cObject);
 	rb_define_const(cCares, "ARES_SOCKET_BAD", INT2NUM(ARES_SOCKET_BAD));
 
+	define_cares_exceptions(cCares);
+
 	int status = ares_library_init(ARES_LIB_INIT_ALL);
 	if (status != ARES_SUCCESS)
 		raise_error(status);
 
-	define_cares_exceptions(cCares);
 
 	cInit = rb_define_class_under(cCares, "Init", rb_cObject);
 	define_init_flags();
