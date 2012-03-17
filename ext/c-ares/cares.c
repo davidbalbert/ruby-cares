@@ -186,7 +186,7 @@ init_callback(void *arg, int s, int read, int write)
 }
 
 static int
-set_init_opts(VALUE opts, struct ares_options *aop)
+set_init_opts(VALUE opts, struct ares_options *aop, VALUE self)
 {
 	int	optmask = 0;
 	VALUE	vflags, vtimeout, vtries, vndots, vudp_port, vtcp_port;
@@ -292,8 +292,18 @@ set_init_opts(VALUE opts, struct ares_options *aop)
 	}
 	if (rb_block_given_p()) {
 		aop->sock_state_cb = init_callback;
-		aop->sock_state_cb_data = (void *)rb_block_proc();
+		VALUE block = rb_block_proc();
+		aop->sock_state_cb_data = (void *)block;
 		optmask |= ARES_OPT_SOCK_STATE_CB;
+
+		/*
+		 * XXX: This is a hack to make sure the garbage collector knows
+		 * about the proc in sock_state_cb_data. We really should do
+		 * this in a mark function passed to Data_Make_Struct, but
+		 * ares_channel is an opaque type, so we can't get a handle on
+		 * sock_state_cb_data in that context.
+		 */
+		rb_iv_set(self, "@sock_state_proc", block);
 	}
 
 	return(optmask);
@@ -379,7 +389,7 @@ rb_cares_init(int argc, VALUE *argv, VALUE self)
 		return(self);
 	}
 
-	optmask = set_init_opts(opts, &ao);
+	optmask = set_init_opts(opts, &ao, self);
 
 	status = ares_init_options(chp, &ao, optmask);
 	if (status != ARES_SUCCESS)
