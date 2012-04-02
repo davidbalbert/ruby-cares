@@ -387,6 +387,8 @@ rb_cares_init(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(self, ares_channel, chp);
 
+	rb_iv_set(self, "@callbacks", rb_ary_new());
+
 	rb_scan_args(argc, argv, "01", &opts);
 	if (NIL_P(opts) && !rb_block_given_p()) {
 		status = ares_init(chp);
@@ -408,12 +410,15 @@ static void
 host_callback(void *arg, int status, int timeouts, struct hostent *hp)
 {
 	char	  buf[BUFLEN], **p;
-	VALUE	  block, info, aliases;
+	VALUE	  args, block, self, info, aliases;
 
 	if (status != ARES_SUCCESS)
 		raise_error(status);
 
-	block = (VALUE)arg;
+	args = (VALUE)arg;
+	block = rb_funcall(args, rb_intern("[]"), 1, INT2NUM(0));
+	self = rb_funcall(args, rb_intern("[]"), 1, INT2NUM(1));
+	rb_ary_delete(rb_iv_get(self, "@callbacks"), args);
 
 	info = rb_ary_new();
 	rb_ary_push(info, rb_str_new2(hp->h_name));
@@ -453,13 +458,22 @@ static VALUE
 rb_cares_gethostbyname(VALUE self, VALUE host, VALUE family)
 {
 	ares_channel *chp;
+	VALUE args;
 
 	if (!rb_block_given_p())
 		rb_raise(rb_eArgError, "gethostbyname: block needed");
 
 	Data_Get_Struct(self, ares_channel, chp);
+
+	args = rb_ary_new2(2);
+	rb_ary_push(args, rb_block_proc());
+	rb_ary_push(args, self);
+
+	rb_ary_push(rb_iv_get(self, "@callbacks"), args);
+
+	/* rb_block_proc() might get GC'd and crash the interpreter */
 	ares_gethostbyname(*chp, StringValuePtr(host), NUM2INT(family),
-			   host_callback, (void *)rb_block_proc());
+			   host_callback, (void *)args);
 	return(self);
 }
 
@@ -483,6 +497,7 @@ rb_cares_gethostbyaddr(VALUE self, VALUE addr, VALUE family)
 	char	*caddr;
 	int	 cfamily;
 	ares_channel *chp;
+	VALUE	args;
 
 	if (!rb_block_given_p())
 		rb_raise(rb_eArgError, "gethostbyaddr: block needed");
@@ -496,16 +511,30 @@ rb_cares_gethostbyaddr(VALUE self, VALUE addr, VALUE family)
 		struct in_addr in;
 		if (inet_pton(cfamily, caddr, &in) != 1)
 			rb_sys_fail("gethostbyaddr");
+
+		args = rb_ary_new2(2);
+		rb_ary_push(args, rb_block_proc());
+		rb_ary_push(args, self);
+
+		rb_ary_push(rb_iv_get(self, "@callbacks"), args);
+
 		ares_gethostbyaddr(*chp, &in, sizeof(in), cfamily,
-				   host_callback, (void *)rb_block_proc());
+				   host_callback, (void *)args);
 		break;
 	}
 	case AF_INET6: {
 		struct in6_addr in6;
 		if (inet_pton(cfamily, caddr, &in6) != 1)
 			rb_sys_fail("gethostbyaddr");
+
+		args = rb_ary_new2(2);
+		rb_ary_push(args, rb_block_proc());
+		rb_ary_push(args, self);
+
+		rb_ary_push(rb_iv_get(self, "@callbacks"), args);
+
 		ares_gethostbyaddr(*chp, &in6, sizeof(in6), cfamily,
-				   host_callback, (void *)rb_block_proc());
+				   host_callback, (void *)args);
 		break;
 	}
 	default:
@@ -517,12 +546,16 @@ rb_cares_gethostbyaddr(VALUE self, VALUE addr, VALUE family)
 static void
 nameinfo_callback(void *arg, int status, int timeouts, char *node, char *service)
 {
-	VALUE	  block, info;
+	VALUE	  args, self, block, info;
 
 	if (status != ARES_SUCCESS)
 		raise_error(status);
 
-	block = (VALUE)arg;
+	args = (VALUE)arg;
+	block = rb_funcall(args, rb_intern("[]"), 1, INT2NUM(0));
+	self = rb_funcall(args, rb_intern("[]"), 1, INT2NUM(1));
+	rb_ary_delete(rb_iv_get(self, "@callbacks"), args);
+
 	info = rb_ary_new();
 
 	if (node != NULL)
@@ -552,7 +585,7 @@ rb_cares_getnameinfo(VALUE self, VALUE info)
 	socklen_t sslen;
 	struct sockaddr_storage ss;
 	ares_channel *chp;
-	VALUE	vaddr, vport, vflags;
+	VALUE	vaddr, vport, vflags, args;
 
 	if (!rb_block_given_p())
 		rb_raise(rb_eArgError, "getnameinfo: block needed");
@@ -606,8 +639,14 @@ rb_cares_getnameinfo(VALUE self, VALUE info)
 		}
 	}
 
+	args = rb_ary_new2(2);
+	rb_ary_push(args, rb_block_proc());
+	rb_ary_push(args, self);
+
+	rb_ary_push(rb_iv_get(self, "@callbacks"), args);
+
 	ares_getnameinfo(*chp, (struct sockaddr *)&ss, sslen, cflags,
-			 nameinfo_callback, (void *)rb_block_proc());
+			 nameinfo_callback, (void *)args);
 	return(self);
 }
 
