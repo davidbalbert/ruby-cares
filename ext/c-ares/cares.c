@@ -88,6 +88,7 @@ static VALUE cNotFoundError;
 static VALUE cNoMemError;
 static VALUE cDestrError;
 static VALUE cFlagsError;
+static VALUE cConnRefusedError;
 
 static void
 define_cares_exceptions(VALUE cCares)
@@ -105,6 +106,8 @@ define_cares_exceptions(VALUE cCares)
 	cDestrError = rb_define_class_under(cCares, "DestructionError",
 	    cCaresError);
 	cFlagsError = rb_define_class_under(cCares, "BadFlagsError",
+	    cCaresError);
+	cConnRefusedError = rb_define_class_under(cCares, "ConnectionRefusedError",
 	    cCaresError);
 }
 
@@ -154,6 +157,9 @@ raise_error(int error)
 		break;
 	case ARES_EBADFLAGS:
 		rb_raise(cFlagsError, "%s", ares_strerror(error));
+		break;
+	case ARES_ECONNREFUSED:
+		rb_raise(cConnRefusedError, "%s", ares_strerror(error));
 		break;
 	}
 }
